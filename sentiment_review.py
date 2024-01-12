@@ -13,9 +13,7 @@ import re
 
 import nltk
 import ssl
-nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
+import os
 from nltk.corpus import stopwords
 
 from wordcloud import WordCloud
@@ -27,30 +25,50 @@ except AttributeError:
 else:
     ssl._create_default_https_context = _create_unverified_https_context
 
+nltk_download = 'nltk_download'
+
+
+if not os.path.exists(nltk_download):
+    os.mkdir(nltk_download)
+
+if not os.path.exists(os.path.join(nltk_download, 'corpora/stopwords')):
+    nltk.download('stopwords', download_dir=nltk_download)
+
+if not os.path.exists(os.path.join(nltk_download, 'corpora/wordnet.zip')):
+    nltk.download('wordnet', download_dir=nltk_download)
+
+if not os.path.exists(os.path.join(nltk_download, 'corpora/omw-1.4.zip')):
+    nltk.download('omw-1.4', download_dir=nltk_download)
+
+nltk.data.path.append(nltk_download)
+
 pd.pandas.set_option('display.max_columns', None)
 
-filename = '20191002-reviews.csv'
+filename = 'Tokopedia.csv'
 df = pd.read_csv(filename, encoding='latin-1')
 df.head()
 
-data = df[['reviewContent', 'rating']].dropna()
+data = df[['Ulasan', 'Rating']].dropna()
 data.head()
 
 def clean_text(text):
     return re.sub('[^a-zA-Z]',' ',text).lower()
-data['clean_text'] = data['reviewContent'].apply(lambda x: clean_text(x))
-data['label'] = data['rating'].map({5: 'positif', 4: 'positif', 3: 'netral', 2: 'negatif', 1: 'negatif'})
+data['clean_text'] = data['Ulasan'].apply(lambda x: clean_text(x))
+data['label'] = data['Rating'].map({'bintang 5': 'positif', 'bintang 4': 'positif', 'bintang 3': 'netral', 'bintang 2': 'negatif', 'bintang 1': 'negatif'})
+data['label'].head()
 
 def count_punct(text):
     count = sum([1 for char in text if char in string.punctuation])
     return round(count/(len(text) - text.count(" ")), 3)*100
-data['review_len'] = data['reviewContent'].apply(lambda x: len(x) - x.count(" "))
-data['punct'] = data['reviewContent'].apply(lambda x: count_punct(x))
+
+data['review_len'] = data['Ulasan'].apply(lambda x: len(x) - x.count(" "))
+data['punct'] = data['Ulasan'].apply(lambda x: count_punct(x))
 data.head()
 
 def tokenize_text(text):
     tokenize_text = text.split()
     return tokenize_text
+
 data['tokens']  =   data['clean_text'].apply(lambda x: tokenize_text(x))
 data.head()
 
@@ -65,19 +83,19 @@ data['lemmatize_review'] = data['tokens'].apply(lambda x: lemmatize_text(x))
 data.head()
 
 print(f"Input data has {len(data)} rows and {len(data.columns)} columns")
-print(f"rating 1 = {len(data[data['rating'] == 1])} rows")
-print(f"rating 2 = {len(data[data['rating'] == 2])} rows")
-print(f"rating 3 = {len(data[data['rating'] == 3])} rows")
-print(f"rating 4 = {len(data[data['rating'] == 4])} rows")
-print(f"rating 5 = {len(data[data['rating'] == 5])} rows")
+print(f"rating 1 = {len(data[data['Rating'] == 'bintang 1'])} rows")
+print(f"rating 2 = {len(data[data['Rating'] == 'bintang 2'])} rows")
+print(f"rating 3 = {len(data[data['Rating'] == 'bintang 3'])} rows")
+print(f"rating 4 = {len(data[data['Rating'] == 'bintang 4'])} rows")
+print(f"rating 5 = {len(data[data['Rating'] == 'bintang 5'])} rows")
 
-print(f"Number of null in label: {data['rating'].isnull().sum()}")
-print(f"Number of null in label: {data['reviewContent'].isnull().sum()}")
-sns.countplot(x='rating', data=data)
+print(f"Number of null in label: {data['Rating'].isnull().sum()}")
+print(f"Number of null in label: {data['Ulasan'].isnull().sum()}")
+sns.countplot(x='Rating', data=data)
 
-data_negative = data[ (data['rating'] == 1) | (data['rating'] == 2)]
-data_neutral = data[ (data['rating'] == 3)]
-data_positive = data[ (data['rating'] == 4) | (data['rating'] == 5)]
+data_negative = data[ (data['Rating'] == 'bintang 1') | (data['Rating'] == 'bintang 2')]
+data_neutral = data[ (data['Rating'] == 'bintang 3')]
+data_positive = data[ (data['Rating'] == 'bintang 4') | (data['Rating'] == 'bintang 5')]
 
 negative_list = data_negative['lemmatize_review'].tolist()
 neutral_list = data_neutral['lemmatize_review'].tolist()
@@ -108,13 +126,16 @@ plt.margins(x=0, y=0)
 plt.title("Negative Review Word Cloud")
 plt.show()
 
-wordcloud = WordCloud(max_font_size = 160, margin=0, background_color = "white", colormap="Blues").generate(filtered_neutral)
-plt.figure(figsize=[10,8])
-plt.imshow(wordcloud, interpolation='bilinear')
-plt.axis("off")
-plt.margins(x=0, y=0)
-plt.title("Neutral Review Word Cloud")
-plt.show()
+if len(filtered_neutral.split()) > 0:
+    wordcloud = WordCloud(max_font_size = 160, margin=0, background_color = "white", colormap="Blues").generate(filtered_neutral)
+    plt.figure(figsize=[10,8])
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis("off")
+    plt.margins(x=0, y=0)
+    plt.title("Neutral Review Word Cloud")
+    plt.show()
+else:
+    print("Teks tidak mengandung kata. Tidak dapat membuat Word Cloud.")
 
 data['lemmatize_review'] = data['lemmatize_review'].astype(str)
 X = data[['lemmatize_review','review_len','punct']]
@@ -143,7 +164,7 @@ X_train_combined = pd.concat([X_train[['review_len','punct']].reset_index(drop=T
                X_train_vect], axis=1)
 X_test_combined = pd.concat([X_test[['review_len','punct']].reset_index(drop=True), X_test_vect], axis=1)
 
-# X_train_vect.head()
+X_train_vect.head()
 
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
@@ -157,22 +178,22 @@ naive_bayes_pred = classifier.predict(X_test_vect)
 
 print(classification_report(y_test, naive_bayes_pred))
 
-class_label = ['negative', 'neutral', 'positive']
-data_cm = pd.DataFrame(confusion_matrix(y_test, naive_bayes_pred), index = class_label, columns = class_label)
-sns.heatmap(data_cm, annot = True, fmt = "d")
-plt.title("Confusion Matrix")
-plt.xlabel("Predicted Label")
-plt.ylabel("True Label")
-plt.show()
+# class_label = ['negative', 'neutral', 'positive']
+# data_cm = pd.DataFrame(confusion_matrix(y_test, naive_bayes_pred), index = class_label, columns = class_label)
+# sns.heatmap(data_cm, annot = True, fmt = "d")
+# plt.title("Confusion Matrix")
+# plt.xlabel("Predicted Label")
+# plt.ylabel("True Label")
+# plt.show()
 
-# # Random Forest Classifier
-# from sklearn.ensemble import RandomForestClassifier
+# Random Forest Classifier
+from sklearn.ensemble import RandomForestClassifier
 
-# classifier = RandomForestClassifier(n_estimators = 150)
-# classifier.fit(X_train_vect, y_train)
-# random_forest_pred = classifier.predict(X_test_vect)
+classifier = RandomForestClassifier(n_estimators = 150)
+classifier.fit(X_train_vect, y_train)
+random_forest_pred = classifier.predict(X_test_vect)
 
-# print(classification_report(y_test, random_forest_pred))
+print(classification_report(y_test, random_forest_pred))
 
 # # confusion matrix
 # class_label = ['negative', 'neutral', 'positive']
@@ -183,7 +204,75 @@ plt.show()
 # plt.ylabel("True Label")
 # plt.show()
 
+#Logistic Regression
+from sklearn.linear_model import LogisticRegression
+
+logistic_classifier = LogisticRegression()
+logistic_classifier.fit(X_train_vect, y_train)
+log_reg_pred = logistic_classifier.predict(X_test_vect)
+print(classification_report(y_test, log_reg_pred))
+
+# class_label = ['negative', 'neutral', 'positive']
+# data_cm = pd.DataFrame(confusion_matrix(y_test, log_reg_pred), index = class_label, columns = class_label)
+# sns.heatmap(data_cm, annot = True, fmt = "d")
+# plt.title("Confusion Matrix Logistic Regression")
+# plt.xlabel("Predicted Label")
+# plt.ylabel("True Label")
+# plt.show()
+
+
+# SVM
+from sklearn.svm import SVC
+
+svm_classifier = SVC(kernel='linear', random_state=0)
+svm_classifier.fit(X_train_vect, y_train)
+svm_pred = svm_classifier.predict(X_test_vect)
+print(classification_report(y_test, svm_pred))
+
+# class_label = ['negative', 'neutral', 'positive']
+# data_cm = pd.DataFrame(confusion_matrix(y_test, svm_pred), index = class_label, columns = class_label)
+# sns.heatmap(data_cm, annot = True, fmt = "d")
+# plt.title("Confusion Matrix SVM")
+# plt.xlabel("Predicted Label")
+# plt.ylabel("True Label")
+# plt.show()
+
+# KNN
+from sklearn.neighbors import KNeighborsClassifier
+
+knn_classifier = KNeighborsClassifier(n_neighbors=5)
+knn_classifier.fit(X_train_vect, y_train)
+knn_pred = knn_classifier.predict(X_test_vect)
+print(classification_report(y_test, knn_pred))
+
+# class_label = ['negative', 'neutral', 'positive']
+# data_cm = pd.DataFrame(confusion_matrix(y_test, knn_pred), index = class_label, columns = class_label)
+# sns.heatmap(data_cm, annot = True, fmt = "d")
+# plt.title("Confusion Matrix KNN")
+# plt.xlabel("Predicted Label")
+# plt.ylabel("True Label")
+# plt.show()
+
+from sklearn.model_selection import cross_val_score
+
+models = [
+    MultinomialNB(),
+    LogisticRegression(),
+    RandomForestClassifier(n_estimators=150),
+    SVC(kernel='linear'),
+    KNeighborsClassifier(n_neighbors=5)
+]
+
+names = ["Naive Bayes", "Logistic Regression", "Random Forest", "SVM", "KNN"]
+for model, name in zip(models, names):
+    print(name)
+    for score in ["accuracy","precision","recall","f1"]:
+        print(f" {score} - {cross_val_score(model, X_train_vect, y_train, scoring=score, cv=10).mean()}")
+    print()
+
+
 # prediction
+
 from sklearn.feature_extraction.text import CountVectorizer
 
 cv = CountVectorizer()
@@ -196,12 +285,7 @@ clf = MultinomialNB()
 clf.fit(X_train_cv, y_train_cv)
 clf.score(X_test_cv, y_test_cv)
 
-data = ["bagus banget", "suka banget", "tidak sesuai deskripsi","rugi beli disini","pengiriman cepat","jelek","buruk"]
+data = ["Bagus broooooo"]
 vect = cv.transform(data).toarray()
 new_pred = clf.predict(vect)
 print(new_pred)
-
-
-vect2 = tfidf.transform(data).toarray()
-new_pred2 = clf.predict(vect2)
-print(new_pred2)

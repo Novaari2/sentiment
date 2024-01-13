@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request,url_for
+from flask import Flask,render_template,request,url_for,jsonify
 import pandas as pd
 import pickle
 from sklearn.feature_extraction.text import CountVectorizer
@@ -13,6 +13,7 @@ import string
 import sys
 import logging
 import ssl
+import os
 
 app = Flask(__name__, template_folder='template')
 
@@ -22,21 +23,21 @@ def home():
 
 @app.route('/predict',methods=['POST'])
 def predict():
-    df = pd.read_csv('20191002-reviews.csv', encoding='latin-1')
-    df = df[['reviewContent', 'rating']].dropna()
+    df = pd.read_csv('Tokopedia.csv', encoding='latin-1')
+    df = df[['Ulasan', 'Rating']].dropna()
 
     def clean_text(text):
         return re.sub('[^a-zA-Z]',' ',text).lower()
     
-    df['cleaned_text'] = df['reviewContent'].apply(lambda x: clean_text(x))
-    df['label'] = df['rating'].map({5: 'positif', 4: 'positif', 3: 'netral', 2: 'negatif', 1: 'negatif'})
+    df['cleaned_text'] = df['Ulasan'].apply(lambda x: clean_text(x)) 
+    df['label'] = df['Rating'].map({'bintang 5': 'positif', 'bintang 4': 'positif', 'bintang 3': 'netral', 'bintang 2': 'negatif', 'bintang 1': 'negatif'})
 
     def count_punct(review):
         count = sum([1 for char in review if char in string.punctuation])
         return round(count/(len(review) - review.count(" ")), 3)*100
     
-    df['review_len'] = df['reviewContent'].apply(lambda x: len(str(x)) - str(x).count(" "))
-    df['punct'] = df['reviewContent'].apply(lambda x: count_punct(str(x)))
+    df['review_len'] = df['Ulasan'].apply(lambda x: len(str(x)) - str(x).count(" "))
+    df['punct'] = df['Ulasan'].apply(lambda x: count_punct(str(x)))
 
     def tokenization(text):
         tokenized = text.split()
@@ -51,13 +52,27 @@ def predict():
     else:
         ssl._create_default_https_context = _create_unverified_https_context
 
-    # lemmatization
-    nltk.download('stopwords')
+    nltk_download = 'nltk_download'
+
+
+    if not os.path.exists(nltk_download):
+        os.mkdir(nltk_download)
+
+    if not os.path.exists(os.path.join(nltk_download, 'corpora/stopwords')):
+        nltk.download('stopwords', download_dir=nltk_download)
+
+    if not os.path.exists(os.path.join(nltk_download, 'corpora/wordnet.zip')):
+        nltk.download('wordnet', download_dir=nltk_download)
+
+    if not os.path.exists(os.path.join(nltk_download, 'corpora/omw-1.4.zip')):
+        nltk.download('omw-1.4', download_dir=nltk_download)
+
+    nltk.data.path.append(nltk_download)
+
     all_stopwords = stopwords.words('indonesian')
     all_stopwords.remove('tidak')
 
-    nltk.download('wordnet')
-    nltk.download('omw-1.4')
+    # lemmatization
     def lemmatize_text(token_list):
         return " ".join([lemmatizer.lemmatize(token) for token in token_list if not token in set(all_stopwords)])
     
@@ -74,15 +89,20 @@ def predict():
     # prediction
     classifier = SVC(kernel='linear', random_state=10)
     classifier.fit(tfidf_train, y_train)
-    classifier.score(tfidf_test, y_test)
+    cek = classifier.score(tfidf_test, y_test)
+    # return jsonify({'cek': str(cek)})
 
     if request.method == 'POST':
         message = request.form['message']
         data = [message]
         vect = tfidf.transform(data).toarray()
         my_prediction = classifier.predict(vect)
+
+        return jsonify({'prediction' : str(my_prediction)})
+    else:
+        return jsonify({'error': 'error'}), 400
     
-    return render_template('result.html',prediction = my_prediction)
+    # return render_template('result.html',prediction = my_prediction)
 
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.ERROR)

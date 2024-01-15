@@ -92,11 +92,11 @@
 
 
 		
-	{% if prediction == 'negatif' %}
+	{% if prediction == 'NEGATIVE' %}
 	<h2 style="color:red;" align="center">Negative Review</h2>
-  {% elif prediction == 'netral' %}
+  {% elif prediction == 'NETRAL' %}
   <h2 style="color:blue;" align="center">Netral Review </h2>
-  {% elif prediction == 'positif' %}
+  {% elif prediction == 'POSITIF' %}
 	<h2 style="color:green;" align="center">Positive Review </h2>
 	{% endif %}
 

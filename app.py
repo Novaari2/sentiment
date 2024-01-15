@@ -14,6 +14,7 @@ import sys
 import logging
 import ssl
 import os
+from sklearn.linear_model import LogisticRegression
 
 app = Flask(__name__, template_folder='template')
 
@@ -30,7 +31,7 @@ def predict():
         return re.sub('[^a-zA-Z]',' ',text).lower()
     
     df['cleaned_text'] = df['Ulasan'].apply(lambda x: clean_text(x)) 
-    df['label'] = df['Rating'].map({'bintang 5': 'positif', 'bintang 4': 'positif', 'bintang 3': 'netral', 'bintang 2': 'negatif', 'bintang 1': 'negatif'})
+    df['label'] = df['Rating'].map({5: "POSITIF", 4: "POSITIF", 3: "NETRAL", 2: "NEGATIF", 1: "NEGATIF"})
 
     def count_punct(review):
         count = sum([1 for char in review if char in string.punctuation])
@@ -70,7 +71,11 @@ def predict():
     nltk.data.path.append(nltk_download)
 
     all_stopwords = stopwords.words('indonesian')
-    all_stopwords.remove('tidak')
+    custom_stopwords = {'tidak', 'dgn', 'yg', 'brg', 'tp', 'bgs', 'bgt', 'sdh', 'bnyk', 'dg', 'nya', 'gk', 'oke', 'sm', 'sama'}
+    for word in custom_stopwords:
+        if word not in all_stopwords:
+            all_stopwords.append(word)
+    all_stopwords = set(all_stopwords)
 
     # lemmatization
     def lemmatize_text(token_list):
@@ -89,20 +94,15 @@ def predict():
     # prediction
     classifier = SVC(kernel='linear', random_state=10)
     classifier.fit(tfidf_train, y_train)
-    cek = classifier.score(tfidf_test, y_test)
-    # return jsonify({'cek': str(cek)})
+    classifier.score(tfidf_test, y_test)
 
     if request.method == 'POST':
         message = request.form['message']
         data = [message]
         vect = tfidf.transform(data).toarray()
         my_prediction = classifier.predict(vect)
-
-        return jsonify({'prediction' : str(my_prediction)})
-    else:
-        return jsonify({'error': 'error'}), 400
     
-    # return render_template('result.html',prediction = my_prediction)
+    return render_template('result.html',prediction = my_prediction)
 
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.ERROR)

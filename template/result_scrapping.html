@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Sentiment Analysis of Seller Review</title>
-	<!-- <link rel="stylesheet" type="text/css" href="../static/css/styles.css"> -->
+	<title></title>
+   <!--  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}"> -->
+   <!-- <link rel="stylesheet" type="text/css" href="../static/css/styles.css"> -->
 	<meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="keywords" content="Sentiment Analysis of Hotel Review">
-    <meta name="description" content="Sentiment Analysis of Hotel Review">
-    
+    <meta name="keywords" content="SMS Spam Filter  Spam  Ham">
+    <meta name="description" content="Spam or Ham SMS Filter">
+ 
     <link rel="icon" type="image/png" href="" />
     
 
@@ -19,18 +20,17 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
 	<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}"> -->
 	<style type="text/css">
-		.btn {
-            font-size: 1.2em;
-            border-radius: 5px;
-            padding: 12px 30px;
-            background: #7c0cd1;
-            text-transform: uppercase;
-            margin-top: 10px;
-        }
-
+	.btn {
+  font-size: 1.2em;
+  border-radius: 5px;
+  padding: 12px 30px;
+  background: #7608c4;
+  text-transform: uppercase;
+    margin-top: 10px;
+}
 .card-header{
     width:100%;
-	color:#de9815;
+  color:#de9815;
     border-bottom:3px solid #BBB;
     
     font-family: 'Roboto', sans-serif;
@@ -66,48 +66,38 @@
 .card-body{
  margin:1em;   
 }
-	</style>
+
+/* #resultbtn{
+    
+} */
+
+
+</style>
 </head>
 <body>
 
-	<header>
-		
-	
-
-
-<div class="jumbotron jumbotron-fluid p-y-3">
+<header>
+    <div class="jumbotron jumbotron-fluid p-y-3">
       <div class="container text-xs-center text-white">
-        
-        <h1 class="display-1 card-header" align="center" style="color:#2196F3;">Seller Review Sentiment Analysis  </h1>
+        <h1 class="display-1 card-header" align="center" style="color:#2196F3;"> The Result of Scrapping  </h1>
+        <p class="lead" align="center">  </p>
       </div>
     </div>
-
-
-
-
-
 </header>
 
-
-	<div class="container">
-    <a href="{{ url_for('scrap') }}" class="btn btn-info btn-lg" style="margin-bottom: 10px;">Scrapping</a>
-    <br>
-    <div class="well">
-        <form action="{{ url_for('predict')}}" method="POST" align="center">
-          <p class="lead" align="center">Enter Your Text Here :</p>
-          <center>
-            <textarea name="message" rows="7" cols="60" placeholder="Masukkan review " required="required"></textarea>
-          </center>
-          <br/>
-          <center>
-            <input type="submit" class="btn-info btn" value="Check this out" >
-          </center>
-      </form>
+    <div class="text-center">
+        <a href="{{ url_for('home') }}" class="btn btn-info btn-lg" style="margin-bottom: 10px;">Home</a>
+    </div>
+	<p style="font-size:30;text-align: center;" class="lead"><b> <u>Result </u></b></p>
+	<div class="results">
+        {% if STATUSCODE == 200 %}
+        <h2 style="color:rgb(38, 229, 95);" align="center">Success Scrapping</h2>
+        {% else %}
+        <h2 style="color:red;" align="center">Failed Scrapping</h2>
+        {% endif %}
 	</div>
-</div>
 
-	<script src="https://unpkg.com/ionicons@5.1.2/dist/ionicons.js"></script>
-	
+  <script src="https://unpkg.com/ionicons@5.1.2/dist/ionicons.js"></script>
 
 </body>
 </html>

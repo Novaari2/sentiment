@@ -1,20 +1,17 @@
 from flask import Flask,render_template,request,url_for,jsonify
 import pandas as pd
-import pickle
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from nltk.corpus import stopwords
 import nltk
-import re
-import string
-import sys
-import logging
-import ssl
-import os
-from sklearn.linear_model import LogisticRegression
+import re, time, string, sys, logging, os, ssl
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 app = Flask(__name__, template_folder='template')
 
@@ -86,7 +83,9 @@ def predict():
 
     X = df[['lemmatize_review','review_len','punct']]
     y = df['label']
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
     tfidf = TfidfVectorizer(max_df= 0.5, min_df = 2)
     tfidf_train = tfidf.fit_transform(X_train['lemmatize_review'])
     tfidf_test = tfidf.transform(X_test['lemmatize_review'])
@@ -103,6 +102,49 @@ def predict():
         my_prediction = classifier.predict(vect)
     
     return render_template('result.html',prediction = my_prediction)
+
+
+@app.route('/getscrap')
+def scrap():
+    return render_template('scrapping.html')
+
+@app.route('/scrapping',methods=['POST'])
+def scrapper():
+    if request.method == 'POST':
+        url = request.form['url']
+        if url:
+            options = webdriver.ChromeOptions()
+            options.add_argument("--start-maximized")
+            driver = webdriver.Chrome(options=options)
+            driver.get(url)
+
+            data = []
+            for i in range(0, 1):
+                soup = BeautifulSoup(driver.page_source, "html.parser")
+                containers = soup.findAll('article', attrs={'class': 'css-ccpe8t'})
+
+                for container in containers:
+                    try:
+                        review = container.find('span', attrs={'data-testid': 'lblItemUlasan'}).text
+                        rating = container.find('div', attrs={'data-testid': 'icnStarRating'})['aria-label'] if container.find('div', attrs={'data-testid': 'icnStarRating'}) else "N/A"
+                        rating_mapping = {"bintang 1": 1, "bintang 2": 2, "bintang 3": 3, "bintang 4": 4, "bintang 5": 5}
+                        rating = rating_mapping.get(rating, "N/A")
+
+                        data.append(
+                            (review, rating)
+                        )
+                    except AttributeError:
+                        continue
+                
+                time.sleep(2)
+                driver.find_element(By.CSS_SELECTOR, "button[aria-label^='Laman berikutnya']").click()
+                time.sleep(3)
+            
+            df = pd.DataFrame(data, columns=['Ulasan', 'Rating'])
+            df.to_csv('Tokopedia.csv', index=False)
+    
+    return render_template('result_scrapping.html', STATUSCODE=200)
+
 
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.ERROR)

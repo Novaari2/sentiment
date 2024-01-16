@@ -20,7 +20,10 @@ import seaborn as sns
 
 app = Flask(__name__, template_folder='template')
 
-app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), '/Users/novaariyanto/Development/python/sentiment')
+# local
+# app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), '/Users/novaariyanto/Development/python/sentiment')
+# docker
+# app.config['UPLOAD_FOLDER'] = '/app/Tokopedia.csv'
 
 @app.route('/')
 def home():
@@ -305,9 +308,14 @@ def upload():
         file = request.files['file']
         if file:
             try:
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+                # local
+                # file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+                # file.save(file_path)
+
+                upload_folder = '/app'
+                file_path = os.path.join(upload_folder, file.filename)
                 file.save(file_path)
-                
+
                 # Memberikan notifikasi bootstrap success
                 response = {'status': 'success', 'message': 'File berhasil diupload'}
             except Exception as e:

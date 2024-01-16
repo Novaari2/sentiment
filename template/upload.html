@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        header {
+            background-color: #2196F3;
+            color: #fff;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+
+        .btn {
+            font-size: 1.2em;
+            border-radius: 5px;
+            padding: 12px 30px;
+            background: #5e0578;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            color: #fff;
+            transition: background 0.3s ease-in-out;
+        }
+
+        .btn:hover {
+            background: #410456;
+        }
+
+        .well {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        }
+
+        #uploadStatus {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #28a745;
+            color: #fff;
+            border: 1px solid #218838;
+        }
+
+        .alert-danger {
+            background-color: #dc3545;
+            color: #fff;
+            border: 1px solid #c82333;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 class="display-1" style="color: #2196F3;">File Upload</h1>
+    </header>
+
+    <div class="container">
+        <a href="{{ url_for('home') }}" class="btn btn-info btn-lg">Home</a>
+        <div class="well">
+            <form action="{{ url_for('upload')}}" method="POST" align="center" enctype="multipart/form-data">
+                <p class="lead" align="center">Upload Your File:</p>
+                <center>
+                    <input type="file" name="file" accept="text/csv" required>
+                </center>
+                <br/>
+                <center>
+                    <input type="submit" class="btn-info btn" value="Upload">
+                </center>
+            </form>
+
+            <!-- Notifikasi Bootstrap untuk menampilkan pesan keberhasilan atau kesalahan -->
+            <div id="uploadStatus" class="alert"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/ionicons@5.1.2/dist/ionicons.js"></script>
+    
+    <!-- Script untuk menanggapi pesan keberhasilan upload -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('form').on('submit', function(event){
+                event.preventDefault();
+                var formData = new FormData(this);
+                
+                $.ajax({
+                    type: 'POST',
+                    url: '/upload',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response){
+                        if(response.status === 'success'){
+                            // Menampilkan notifikasi Bootstrap success
+                            $('#uploadStatus').removeClass('alert-danger').addClass('alert-success').html(response.message).fadeIn();
+                        } else {
+                            // Menampilkan notifikasi Bootstrap error
+                            $('#uploadStatus').removeClass('alert-success').addClass('alert-danger').html('Error: ' + response.message).fadeIn();
+                        }
+                    },
+                    error: function(xhr, status, error){
+                        // Menampilkan notifikasi Bootstrap error jika terjadi kesalahan AJAX
+                        $('#uploadStatus').removeClass('alert-success').addClass('alert-danger').html('Error: ' + error).fadeIn();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -20,6 +20,8 @@ import seaborn as sns
 
 app = Flask(__name__, template_folder='template')
 
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), '/Users/novaariyanto/Development/python/sentiment')
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -109,46 +111,46 @@ def predict():
     return render_template('result.html',prediction = my_prediction)
 
 
-@app.route('/getscrap')
-def scrap():
-    return render_template('scrapping.html')
+# @app.route('/getscrap')
+# def scrap():
+#     return render_template('scrapping.html')
 
-@app.route('/scrapping',methods=['POST'])
-def scrapper():
-    if request.method == 'POST':
-        url = request.form['url']
-        if url:
-            options = webdriver.ChromeOptions()
-            options.add_argument("--start-maximized")
-            driver = webdriver.Chrome(options=options)
-            driver.get(url)
+# @app.route('/scrapping',methods=['POST'])
+# def scrapper():
+#     if request.method == 'POST':
+#         url = request.form['url']
+#         if url:
+#             options = webdriver.ChromeOptions()
+#             options.add_argument("--start-maximized")
+#             driver = webdriver.Chrome(options=options)
+#             driver.get(url)
 
-            data = []
-            for i in range(0, 10):
-                soup = BeautifulSoup(driver.page_source, "html.parser")
-                containers = soup.findAll('article', attrs={'class': 'css-ccpe8t'})
+#             data = []
+#             for i in range(0, 10):
+#                 soup = BeautifulSoup(driver.page_source, "html.parser")
+#                 containers = soup.findAll('article', attrs={'class': 'css-ccpe8t'})
 
-                for container in containers:
-                    try:
-                        review = container.find('span', attrs={'data-testid': 'lblItemUlasan'}).text
-                        rating = container.find('div', attrs={'data-testid': 'icnStarRating'})['aria-label'] if container.find('div', attrs={'data-testid': 'icnStarRating'}) else "N/A"
-                        rating_mapping = {"bintang 1": 1, "bintang 2": 2, "bintang 3": 3, "bintang 4": 4, "bintang 5": 5}
-                        rating = rating_mapping.get(rating, "N/A")
+#                 for container in containers:
+#                     try:
+#                         review = container.find('span', attrs={'data-testid': 'lblItemUlasan'}).text
+#                         rating = container.find('div', attrs={'data-testid': 'icnStarRating'})['aria-label'] if container.find('div', attrs={'data-testid': 'icnStarRating'}) else "N/A"
+#                         rating_mapping = {"bintang 1": 1, "bintang 2": 2, "bintang 3": 3, "bintang 4": 4, "bintang 5": 5}
+#                         rating = rating_mapping.get(rating, "N/A")
 
-                        data.append(
-                            (review, rating)
-                        )
-                    except AttributeError:
-                        continue
+#                         data.append(
+#                             (review, rating)
+#                         )
+#                     except AttributeError:
+#                         continue
                 
-                time.sleep(2)
-                driver.find_element(By.CSS_SELECTOR, "button[aria-label^='Laman berikutnya']").click()
-                time.sleep(3)
+#                 time.sleep(2)
+#                 driver.find_element(By.CSS_SELECTOR, "button[aria-label^='Laman berikutnya']").click()
+#                 time.sleep(3)
             
-            df = pd.DataFrame(data, columns=['Ulasan', 'Rating'])
-            df.to_csv('Tokopedia.csv', index=False)
+#             df = pd.DataFrame(data, columns=['Ulasan', 'Rating'])
+#             df.to_csv('Tokopedia.csv', index=False)
     
-    return render_template('result_scrapping.html', STATUSCODE=200)
+#     return render_template('result_scrapping.html', STATUSCODE=200)
 
 
 @app.route('/getanalyst')
@@ -287,10 +289,38 @@ def analyst():
     plt.xlabel("Predicted Label")
     plt.ylabel("True Label")
     # plt.show()
-    plt.savefig('sample_plot.png') 
+    plt.savefig('sample_plot.jpg') 
 
 
     return render_template('analyst.html', accuracy=accuracy, classification_report=report, plot_image='sample_plot.png')
+
+
+@app.route('/data_upload')
+def data_upload():
+    return render_template('upload.html')
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    if request.method == 'POST':
+        file = request.files['file']
+        if file:
+            try:
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+                file.save(file_path)
+                
+                # Memberikan notifikasi bootstrap success
+                response = {'status': 'success', 'message': 'File berhasil diupload'}
+            except Exception as e:
+                # Jika terjadi kesalahan saat menyimpan file
+                response = {'status': 'error', 'message': str(e)}
+        else:
+            # Jika tidak ada file yang diunggah
+            response = {'status': 'error', 'message': 'Tidak ada file yang diunggah'}
+    else:
+        # Jika bukan metode POST
+        response = {'status': 'error', 'message': 'Metode tidak diizinkan'}
+
+    return jsonify(response)
 
 
 app.logger.addHandler(logging.StreamHandler(sys.stdout))

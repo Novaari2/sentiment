@@ -3,7 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-import time
+import time, os
 import pandas as pd
 
 url = input("Masukkan url toko : ")
@@ -39,4 +39,8 @@ if url:
 
     print(data)
     df = pd.DataFrame(data, columns=["Ulasan", "Rating"])
-    df.to_csv("Tokopedia.csv", index=False)
+
+    downloads_folder_path = os.path.join(os.path.expanduser("~"), "Downloads")
+    csv_file_path = os.path.join(downloads_folder_path, "Tokopedia.csv")
+
+    df.to_csv(csv_file_path, index=False)

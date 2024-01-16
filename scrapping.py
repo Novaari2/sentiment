@@ -24,6 +24,9 @@ if url:
                 review = container.find('span', attrs={'data-testid': 'lblItemUlasan'}).text
                 rating = container.find('div', attrs={'data-testid': 'icnStarRating'})['aria-label'] if container.find('div', attrs={'data-testid': 'icnStarRating'}) else "N/A"
 
+                rating_mapping = {"bintang 1": 1, "bintang 2": 2, "bintang 3": 3, "bintang 4": 4, "bintang 5": 5}
+                rating = rating_mapping.get(rating, "N/A")
+
                 data.append(
                     (review, rating)
                 )

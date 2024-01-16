@@ -14,6 +14,7 @@ import re
 import nltk
 import ssl
 import os
+from imblearn.over_sampling import RandomOverSampler
 from nltk.corpus import stopwords
 
 from wordcloud import WordCloud
@@ -153,11 +154,17 @@ print(y_test.shape)
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+# oversampling
+ros = RandomOverSampler(random_state=0)
+X_resampled, y_resampled = ros.fit_resample(X_train, y_train)
+
 tfidf = TfidfVectorizer(max_df= 0.5, min_df = 2)
-tfidf_train = tfidf.fit_transform(X_train['lemmatize_review'])
+# tfidf_train = tfidf.fit_transform(X_train['lemmatize_review'])
+tfidf_train_resampled = tfidf.fit_transform(X_resampled['lemmatize_review'])
 tfidf_test = tfidf.transform(X_test['lemmatize_review'])
 
-X_train_vect = pd.DataFrame(tfidf_train.toarray(), columns=tfidf.get_feature_names_out())
+# X_train_vect = pd.DataFrame(tfidf_train.toarray(), columns=tfidf.get_feature_names_out())
+X_train_vect = pd.DataFrame(tfidf_train_resampled.toarray(), columns=tfidf.get_feature_names_out())
 X_test_vect = pd.DataFrame(tfidf_test.toarray(), columns=tfidf.get_feature_names_out())
 
 X_train_combined = pd.concat([X_train[['review_len','punct']].reset_index(drop=True),
